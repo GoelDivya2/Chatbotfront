@@ -15,58 +15,63 @@ export const ChatProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
 
   // ✅ FETCH RESPONSE FROM GEMINI
-  async function fetchResponse() {
-    if (prompt.trim() === "") return alert("Write prompt");
+async function fetchResponse() {
+  if (prompt.trim() === "") return alert("Write prompt");
 
-    setNewRequestLoading(true);
+  setNewRequestLoading(true);
 
-    const userPrompt = prompt; // store before clearing
-    setPrompt("");
+  const userPrompt = prompt;
+  setPrompt("");
 
-    try {
-      const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
-        {
-          contents: [
-            {
-              parts: [{ text: userPrompt }],
-            },
-          ],
-        }
-      );
+  try {
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+      {
+        contents: [
+          {
+            parts: [
+              {
+                text: `${userPrompt}
 
-      const answer =
-        response?.data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-        "No response";
+Answer in a maximum of 150 words. Do not exceed 50 words.`,
+              },
+            ],
+          },
+        ],
+      }
+    );
 
-      const message = {
+    const answer =
+      response?.data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "No response";
+
+    const message = {
+      question: userPrompt,
+      answer: answer,
+    };
+
+    setMessages((prev) => [...prev, message]);
+    setNewRequestLoading(false);
+
+    // ✅ Save to backend
+    await axios.post(
+      `${server}/api/chat/${selected}`,
+      {
         question: userPrompt,
         answer: answer,
-      };
-
-      setMessages((prev) => [...prev, message]);
-      setNewRequestLoading(false);
-
-      // ✅ Save to backend
-      await axios.post(
-        `${server}/api/chat/${selected}`,
-        {
-          question: userPrompt,
-          answer: answer,
+      },
+      {
+        headers: {
+          token: localStorage.getItem("token"),
         },
-        {
-          headers: {
-            token: localStorage.getItem("token"),
-          },
-        }
-      );
-    } catch (error) {
-      console.log(error);
-      alert("Something went wrong");
-      setNewRequestLoading(false);
-    }
+      }
+    );
+  } catch (error) {
+    console.log(error);
+    alert("Something went wrong");
+    setNewRequestLoading(false);
   }
-
+}
   // ✅ FETCH ALL CHATS
   async function fetchChats() {
     try {
