@@ -41,7 +41,7 @@ const Verify = () => {
           </label>
 
           <input
-            type="number"
+            type="text"
             id="otp"
             value={otp}
             onChange={(e) => setOtp(e.target.value)}
